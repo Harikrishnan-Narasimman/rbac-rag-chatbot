@@ -1,8 +1,6 @@
-# DS RPC 01: Internal Chatbot with Role-Based Access Control
+# Internal Chatbot with Role-Based Access Control
 
-This is a RAG (Retrieval-Augmented Generation) based internal chatbot. Employees authenticate, and their questions are answered using only the internal documents their role is permitted to see. It's built for Codebasics's [Resume Project Challenge](https://codebasics.io/challenge/codebasics-gen-ai-data-science-resume-project-challenge).
-
-![alt text](resources/RPC_01_Thumbnail.jpg)
+This is a RAG (Retrieval-Augmented Generation) based internal chatbot. Employees authenticate, and their questions are answered using only the internal documents their role is permitted to see.
 
 ## How it works
 
