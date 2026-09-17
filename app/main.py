@@ -2,19 +2,22 @@ from typing import Dict
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from passlib.context import CryptContext
 
 
 app = FastAPI()
 security = HTTPBasic()
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Dummy user database
 users_db: Dict[str, Dict[str, str]] = {
-    "Tony": {"password": "password123", "role": "engineering"},
-    "Bruce": {"password": "securepass", "role": "marketing"},
-    "Sam": {"password": "financepass", "role": "finance"},
-    "Peter": {"password": "pete123", "role": "engineering"},
-    "Sid": {"password": "sidpass123", "role": "marketing"},
-    "Natasha": {"passwoed": "hrpass123", "role": "hr"}
+    "Tony": {"password": pwd_context.hash("password123"), "role": "engineering"},
+    "Bruce": {"password": pwd_context.hash("securepass"), "role": "marketing"},
+    "Sam": {"password": pwd_context.hash("financepass"), "role": "finance"},
+    "Peter": {"password": pwd_context.hash("pete123"), "role": "engineering"},
+    "Sid": {"password": pwd_context.hash("sidpass123"), "role": "marketing"},
+    "Natasha": {"password": pwd_context.hash("hrpass123"), "role": "hr"},
+    "Hari": {"password": pwd_context.hash("haripass123"), "role": "general"},
 }
 
 
@@ -23,7 +26,7 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
     username = credentials.username
     password = credentials.password
     user = users_db.get(username)
-    if not user or user["password"] != password:
+    if not user or not pwd_context.verify(password, user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     return {"username": username, "role": user["role"]}
 
