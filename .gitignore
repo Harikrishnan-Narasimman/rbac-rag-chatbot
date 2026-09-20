@@ -12,3 +12,4 @@ wheels/
 *.lock
 resources/qdrant_db
 .env
+.vscode

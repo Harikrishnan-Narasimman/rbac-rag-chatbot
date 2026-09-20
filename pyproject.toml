@@ -17,7 +17,15 @@ dependencies = [
     "bcrypt<4.1",
     "pydantic-settings>=2.6.0",
     "unstructured>=0.16.0",
+    "langchain-huggingface>=0.1.0"
 ]
 
-[tool.setuptools]
-packages = ["app"]
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -5,8 +5,10 @@ This is a RAG (Retrieval-Augmented Generation) based internal chatbot. Employees
 ## How it works
 
 1. **Ingestion** (`scripts/ingest.py`) — walks `resources/data/<department>/`, where each folder name is a department tag. Markdown files are split header-aware then chunked, CSVs are loaded row-per-document (so tabular data like HR records isn't broken mid-row). Every chunk is tagged with `department`, `source`, and `doc_type` metadata, embedded with a `sentence-transformers` model, and stored in a local Qdrant vector database (`resources/qdrant_db/`, collection `company_docs`).
-2. **Auth** (`app/main.py`) — FastAPI service using HTTP Basic Auth. Passwords are bcrypt-hashed via `passlib`. Each user has a role (`engineering`, `finance`, `hr`, `marketing`, `general`).
-3. **Retrieval + chat** (`/chat` endpoint) — *in progress*. Will embed the user's question, search Qdrant filtered to the departments their role can access, and pass the retrieved chunks to an LLM (via `langchain-groq`) to generate a grounded answer.
+2. **Auth** (`app/main.py`) — FastAPI service using HTTP Basic Auth. Passwords are bcrypt-hashed via `passlib`. Each user has a role.
+3. **RBAC** (`app/core/rbac.py`) — each role maps to the departments it may search: its own department plus `general`. The `c-level` role is unrestricted.
+4. **Retrieval + chat** (`/chat`) — embeds the question, searches Qdrant filtered to the caller's allowed departments, and passes the chunks to `openai/gpt-oss-120b` on Groq, which answers only from that context or refuses.
+
 
 ### Roles Provided
 - **engineering**
@@ -22,6 +24,13 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
+
+Copy `.env.example` to `.env` and fill in your keys (a free Groq key is enough):
+
+```bash
+cp .env.example .env
+```
+
 
 ## Running the ingestion pipeline
 
@@ -44,11 +53,20 @@ Scoping `--reload-dir` to `app/` keeps the auto-reloader from watching the Qdran
 Test with:
 
 ```bash
-curl -u Tony:password123 http://127.0.0.1:8000/login
+curl -u Natasha:hrpass123 -X POST http://127.0.0.1:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is Aadhya Saxena'"'"'s salary?"}'
 ```
+
+Or use the interactive docs at http://127.0.0.1:8000/docs (click Authorize first).
+
 
 ## Status
 
 - [x] Basic Auth with hashed passwords and role assignment
 - [x] Document ingestion, chunking, embedding, and vector storage
-- [ ] Role-filtered retrieval + LLM-generated answers in `/chat`
+- [x] Role-filtered retrieval + LLM-generated answers in `/chat`
+- [ ] PII guardrails and out-of-scope detection
+- [ ] JWT auth + React frontend
+- [ ] Evaluation (Ragas/LangSmith) and CI gate
+- [ ] Azure deployment, CI/CD and cost monitoring

@@ -1,13 +1,25 @@
 from typing import Dict
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from passlib.context import CryptContext
+from groq import APIError, RateLimitError 
+
+from app.schemas.chat import ChatRequest, ChatResponse
+from app.services import rag
+from app.services.vectorstore import get_vectorstore
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    get_vectorstore()
+    yield
 
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 security = HTTPBasic()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 # Dummy user database
 users_db: Dict[str, Dict[str, str]] = {
@@ -18,6 +30,7 @@ users_db: Dict[str, Dict[str, str]] = {
     "Sid": {"password": pwd_context.hash("sidpass123"), "role": "marketing"},
     "Natasha": {"password": pwd_context.hash("hrpass123"), "role": "hr"},
     "Hari": {"password": pwd_context.hash("haripass123"), "role": "general"},
+    "Nick": {"password": pwd_context.hash("ceopass123"), "role": "c-level"},
 }
 
 
@@ -44,6 +57,11 @@ def test(user=Depends(authenticate)):
 
 
 # Protected chat endpoint
-@app.post("/chat")
-def query(user=Depends(authenticate), message: str = "Hello"):
-    return "Implement this endpoint."
+@app.post("/chat", response_model=ChatResponse)
+def chat(request: ChatRequest, user=Depends(authenticate)):
+    try:
+        return rag.answer(request.message, user["role"])
+    except RateLimitError:
+        raise HTTPException(status_code=429, detail="LLM rate limit reached, try again shortly.")
+    except APIError:
+        raise HTTPException(status_code=502, detail="The language model service is unavailable.")

@@ -2,12 +2,10 @@ from pathlib import Path
 from typing import List
 import logging
 from langchain_community.document_loaders import TextLoader, CSVLoader
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
-from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, Distance
 
 
 logging.basicConfig(
